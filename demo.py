@@ -4,12 +4,28 @@ demo.py - End-to-end demonstration of the Searchable Encryption Leaky Problem.
 Run with:
     python demo.py
 
-This script walks through the full lifecycle of a basic SSE scheme, then
-deliberately exposes the four classical leakage types so that you can see
-exactly what information a passive (honest-but-curious) server can extract
-from encrypted queries — without ever learning the plaintext keywords.
+Change the MODE variable below to switch between two educational scenarios:
+
+  MODE = 'before'  — Shows the original SSE scheme with full leakage.
+                     The server can observe exact result-set sizes (volume
+                     leakage), repeated trapdoors (search-pattern leakage),
+                     and the access pattern for every query.
+
+  MODE = 'after'   — Activates result padding (a volume-leakage mitigation).
+                     Every result set is padded to PADDED_RESULT_SIZE entries
+                     with dummy doc IDs so the server always sees the same
+                     number of results, hiding the real match count.
 """
 
+# ---------------------------------------------------------------------------
+# MODE SWITCH — set to 'before' (leakage demo) or 'after' (mitigation demo)
+# ---------------------------------------------------------------------------
+MODE = 'before'   # Change to 'after' to enable volume-leakage mitigation
+
+# Fixed result-set size used when MODE == 'after' (padding target).
+PADDED_RESULT_SIZE = 5
+
+import os
 import sys
 
 from src.encryption import generate_key, generate_trapdoor
@@ -40,6 +56,34 @@ def section(text: str) -> None:
 
 def info(text: str) -> None:
     print(f"  {text}")
+
+
+def pad_results(results: list, target_size: int) -> list:
+    """
+    Pad *results* with dummy encrypted doc-ID strings to reach *target_size*.
+
+    This is the volume-leakage mitigation used in MODE == 'after'.  The server
+    always receives exactly *target_size* entries regardless of how many real
+    documents matched, so it cannot infer the true match count.
+
+    The dummy IDs are random hex strings that will not appear in the document
+    store; decrypt_results() silently skips them, so the client still sees
+    only the genuine documents.
+
+    If ``len(results) >= target_size`` the original list is returned unchanged.
+
+    Args:
+        results:     Original list of encrypted doc-ID hex strings.
+        target_size: Desired minimum result-set length.
+
+    Returns:
+        List[str]: List of length ``max(len(results), target_size)``.
+    """
+    padded = list(results)
+    while len(padded) < target_size:
+        # 16 random bytes → 32-hex-char dummy ID (never in the document store)
+        padded.append(os.urandom(16).hex())
+    return padded
 
 
 # ---------------------------------------------------------------------------
@@ -167,7 +211,14 @@ QUERIES = [
 
 def main() -> None:
     banner("SEARCHABLE ENCRYPTION LEAKY PROBLEM — DEMONSTRATION")
-    info("This demo illustrates the four classical leakage types in SSE.")
+    info(f"Running in MODE = '{MODE}'")
+    if MODE == 'before':
+        info("BEFORE: Full leakage is visible — exact result counts, repeated")
+        info("        trapdoors, and access patterns are all observable by the server.")
+    else:
+        info("AFTER:  Volume-leakage mitigation active — result sets are padded to")
+        info(f"        {PADDED_RESULT_SIZE} entries so the server cannot infer the true match count.")
+    info("")
     info("Reference: Curtmola et al. 2006, Islam et al. 2012, Cash et al. 2015")
 
     # -----------------------------------------------------------------------
@@ -203,6 +254,11 @@ def main() -> None:
     # -----------------------------------------------------------------------
     section("STEP 3: Client Issues Search Queries via Trapdoors")
     info("Queries: " + ", ".join(QUERIES))
+    if MODE == 'after':
+        info(f"[AFTER] Result sets will be padded to {PADDED_RESULT_SIZE} entries "
+             f"(volume-leakage mitigation).")
+    else:
+        info("[BEFORE] Result sets reflect real match counts — volume leakage is visible.")
     info("")
 
     analyzer = LeakageAnalyzer()
@@ -211,15 +267,28 @@ def main() -> None:
         trapdoor = generate_trapdoor(key, query_keyword)
         results = search(encrypted_index, trapdoor)
 
-        # Log the query so the leakage analyzer can inspect it
-        analyzer.log_query(trapdoor, results)
+        # --- Volume-leakage mitigation (MODE == 'after') -------------------
+        # Pad the result set sent to the leakage analyzer so the server always
+        # observes PADDED_RESULT_SIZE entries, hiding the real match count.
+        if MODE == 'after':
+            server_visible_results = pad_results(results, PADDED_RESULT_SIZE)
+        else:
+            server_visible_results = results
 
-        # Decrypt results (client-side)
+        # Log the query so the leakage analyzer can inspect it
+        analyzer.log_query(trapdoor, server_visible_results)
+
+        # Decrypt results (client-side); dummy padding IDs are silently skipped
         decrypted = decrypt_results(key, results, document_store)
 
         info(f"  Query: '{query_keyword}'")
         info(f"    Trapdoor: {trapdoor[:24]}...")
-        info(f"    Matching docs: {len(results)}")
+        if MODE == 'after':
+            info(f"    Real matching docs: {len(results)}  |  "
+                 f"Server-visible result count: {len(server_visible_results)} "
+                 f"(padded, hides true count)")
+        else:
+            info(f"    Matching docs: {len(results)}  [server sees exact count — volume leakage]")
         for doc in decrypted:
             snippet = doc["content"][:60].replace("\n", " ")
             info(f"      [{doc['id']}] {snippet}...")
@@ -272,7 +341,11 @@ def main() -> None:
          "    so no single server observes the full query."),
     ]
     for name, desc in mitigations:
-        info(f"  [{name}]")
+        # Highlight the mitigation that is active in 'after' mode
+        active_tag = " ← ACTIVE in MODE='after'" if (
+            MODE == 'after' and name == "Result Padding"
+        ) else ""
+        info(f"  [{name}]{active_tag}")
         info(f"    {desc}")
         info("")
 

@@ -14,9 +14,9 @@ from flask import Blueprint, jsonify, request, session as flask_session
 
 import session_manager
 from config import KNOWN_KEYWORD_FREQUENCIES, PADDED_RESULT_SIZE, SAMPLE_DOCUMENTS
-from src.encryption import generate_trapdoor
-from src.search import search as sse_search, decrypt_results
-from src.attack_simulation import FrequencyAnalysisAttack
+from encryption import generate_trapdoor
+from sse_search import search as sse_search, decrypt_results
+from attack_simulation import FrequencyAnalysisAttack
 
 search_bp = Blueprint("search", __name__)
 

@@ -86,7 +86,7 @@ def get_analysis():
     ]
 
     # Frequency analysis attack
-    from src.attack_simulation import FrequencyAnalysisAttack
+    from attack_simulation import FrequencyAnalysisAttack
 
     attack = FrequencyAnalysisAttack(KNOWN_KEYWORD_FREQUENCIES, freq)
     attack_raw = attack.run_attack()

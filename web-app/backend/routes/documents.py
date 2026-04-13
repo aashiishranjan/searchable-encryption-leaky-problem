@@ -13,7 +13,7 @@ from flask import Blueprint, jsonify, request, session as flask_session
 
 import session_manager
 from config import SAMPLE_DOCUMENTS
-from src.searchable_index import SearchableIndex
+from searchable_index import SearchableIndex
 
 documents_bp = Blueprint("documents", __name__)
 

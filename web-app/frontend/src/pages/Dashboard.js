@@ -12,7 +12,6 @@ export default function Dashboard() {
 
   const handleDocsChange = (loaded) => {
     setDocsLoaded(!!loaded);
-    if (loaded) setTab('search');
   };
 
   const renderTab = () => {

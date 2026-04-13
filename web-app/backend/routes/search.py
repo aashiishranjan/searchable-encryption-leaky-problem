@@ -79,7 +79,16 @@ def _sid():
 
 
 def _pad_results(results: list, target_size: int) -> list:
-    """Pad *results* with random dummy IDs to reach *target_size* entries."""
+    """
+    Pad *results* with random dummy IDs to reach *target_size* entries.
+
+    Each dummy entry is 16 random bytes encoded as a 32-character hex string.
+    16 bytes matches the length of a typical AES-CBC IV, making dummy entries
+    indistinguishable in size from real encrypted doc-ID strings.  Crucially,
+    these hex strings are never present in the document store so
+    decrypt_results() skips them silently — the client still sees only the
+    genuine matching documents.
+    """
     padded = list(results)
     while len(padded) < target_size:
         padded.append(os.urandom(16).hex())

@@ -15,7 +15,9 @@ export default function DocumentUpload({ onDocsChange }) {
       const res = await getDocuments();
       setDocuments(res.data.documents || []);
       if (onDocsChange) onDocsChange(res.data.initialized);
-    } catch {/* ignore */}
+    } catch (err) {
+      console.error('Failed to fetch documents:', err);
+    }
   }, [onDocsChange]);
 
   useEffect(() => { fetchDocs(); }, [fetchDocs]);

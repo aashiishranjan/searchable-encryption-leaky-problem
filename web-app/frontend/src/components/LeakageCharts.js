@@ -123,7 +123,10 @@ export default function LeakageCharts({ docsLoaded }) {
               <Tooltip
                 contentStyle={{ background: '#1e3448', border: '1px solid #2d4a62', borderRadius: 6, fontSize: 12 }}
                 labelStyle={{ color: '#e8f0f8' }}
-                formatter={(val, _, props) => [`${val} queries (${props.payload?.pct}%)`, props.payload?.trapdoor]}
+                formatter={(val, _, props) => {
+                  const payload = props && props.payload;
+                  return [`${val} queries (${payload?.pct ?? 0}%)`, payload?.trapdoor ?? ''];
+                }}
               />
               <Bar dataKey="count" radius={[4, 4, 0, 0]}>
                 {freqData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}

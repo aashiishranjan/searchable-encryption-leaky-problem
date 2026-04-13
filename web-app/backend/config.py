@@ -3,10 +3,19 @@ config.py - Configuration settings for the Flask backend.
 """
 
 import os
+import warnings
 
-# Flask
-SECRET_KEY = os.environ.get("SECRET_KEY", "dev-secret-key-change-in-production")
 DEBUG = os.environ.get("DEBUG", "True").lower() == "true"
+
+_default_key = "dev-secret-key-change-in-production"
+SECRET_KEY = os.environ.get("SECRET_KEY", _default_key)
+
+if not DEBUG and SECRET_KEY == _default_key:
+    warnings.warn(
+        "SECRET_KEY is set to the insecure default value in a non-debug environment. "
+        "Set the SECRET_KEY environment variable to a strong random secret before deploying.",
+        stacklevel=2,
+    )
 HOST = os.environ.get("HOST", "127.0.0.1")
 PORT = int(os.environ.get("PORT", 5000))
 

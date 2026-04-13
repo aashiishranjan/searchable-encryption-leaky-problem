@@ -24,7 +24,10 @@ export default function QueryHistory({ docsLoaded }) {
     try {
       await resetSession();
       setData(null);
-    } catch {/* ignore */}
+    } catch (err) {
+      console.error('Session reset failed:', err);
+      setError('Failed to reset session. Please try again.');
+    }
   };
 
   if (loading) return (

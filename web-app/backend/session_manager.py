@@ -15,7 +15,10 @@ from src.encryption import generate_key
 from src.searchable_index import SearchableIndex
 from src.leakage_analyzer import LeakageAnalyzer
 
-# In-memory store: session_id → session_data dict
+# In-memory store: session_id → session_data dict.
+# NOTE: This is intentionally simple for a demo application.  For production
+# use replace with a proper session backend (e.g. Redis with TTL) to avoid
+# unbounded memory growth as sessions accumulate.
 _sessions: Dict[str, Dict[str, Any]] = {}
 
 

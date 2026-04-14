@@ -2,7 +2,7 @@
 
 A hands-on Python project that demonstrates the **four classical leakage
 types** inherent in Searchable Symmetric Encryption (SSE) schemes, along
-with a frequency-analysis attack simulation and a discussion of mitigation
+with an frequency-analysis attack simulation and a discussion of mitigation
 strategies.
 
 ---
